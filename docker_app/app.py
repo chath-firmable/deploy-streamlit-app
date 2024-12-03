@@ -4,6 +4,11 @@ import boto3
 from utils.auth import Auth
 from utils.llm import Llm
 from config_file import Config
+# Basic page config
+st.set_page_config(
+    page_title="Your App Name",
+    layout="wide"
+)
 
 # ID of Secrets Manager containing cognito parameters
 secrets_manager_id = Config.SECRETS_MANAGER_ID
@@ -33,21 +38,22 @@ st.title("Generative AI Application")
 
 # Ask user for input text
 input_sent = st.text_input("Input Sentence", "Say Hello World! in Spanish, French and Japanese.")
+submit_button = st.button("Get LLM Response")
+
 
 # Create the large language model object
-llm = Llm(Config.BEDROCK_REGION)
+try:
+    bedrock_region = Config.BEDROCK_REGION
+except AttributeError:
+    bedrock_region = "ap-southeast-2"  # or whatever your default region should be
+    
+llm = Llm(bedrock_region)
 
 # When there is an input text to process
-if input_sent:
+if submit_button:
     # Invoke the Bedrock foundation model
     response = llm.invoke(input_sent)
+    json_response = json.loads(response['body'].read().decode('utf-8'))
+    st.write("**Foundation model output** \n\n", json_response['content'][0]['text'])
 
-    # Transform response to json
-    json_response = json.loads(response.get("body").read())
 
-    # Format response and print it in the console
-    pretty_json_output = json.dumps(json_response, indent=2)
-    print("API response: ", pretty_json_output)
-
-    # Write response on Streamlit web interface
-    st.write("**Foundation model output** \n\n", json_response['completion'])
